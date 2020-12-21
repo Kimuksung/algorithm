@@ -1,37 +1,26 @@
-def solution(name):
+def solution(names):
     answer = 0
-    name = name.lower()
+    number = [min( ord(name) - ord('A'), (ord('Z') - ord(name) +1 )) for name in names ]
     
-    for char in name:
-        number = ord(char) - 96
-        if number <15:
-            answer += number -1 
-        else:
-            answer += 26 - number +  1  
-    print(answer)
-    num = len(name)
-    left , right = 0,0
-    count = 0
-    while True:
+    index = 0
+    
+    while(True):
+        answer += number[index]
+        number[index] = 0
         
-        if left < 0 :
-            left = num-1
-            
-        if right > num-1 :
-            right = 0
+        if sum(number) == 0:
+            break
+        left , right = 1 , 1
+        #index에서 왼쪽값 / 우측값 가까운거 구해본다.
+        while(number[index - left] ==0):
+            left += 1
+        while(number[index + right] ==0):
+            right += 1
         
-        if name[left] !="a":
-            print(left, right)
-            answer += count
-        
-        elif name[right] != "a":
-            print(left, right)
-            answer += count
-        
-        left -= 1
-        right += 1
-        count += 1
+        answer += left if left < right else right
+        index += -1 * left if left < right else right
+    
     return answer
 
-name = "JEROEN"
-solution(name)
+names = "JAN"
+solution(names)
