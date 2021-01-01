@@ -46,8 +46,69 @@
 ### metadata server cluster
 -
 ### Architecture
-><img src="https://ibb.co/nPCk0Y6"/>
+>![enter image description here](https://docs.openstack.org/ocata/config-reference/_images/ceph-architecture.png)
 
+## UNIX File System
+### Architecture
+> File System은 파일을 기록하기 위한 것이다.
+> 파일은 속성인 MetaData와 실제 데이터를 기록하는 Data 영역으로 나뉜다.
+> ![enter image description here](https://www.livefirelabs.com/unix_tip_trick_shell_script/unix_operating_system_fundamentals/208_global/images/filesystem1.gif)
+![enter image description here](https://mblogthumb-phinf.pstatic.net/20140121_147/bitnang_1390307029963jlhn2_PNG/012114_1223_14.png?type=w2)
+
+
+### Inode
+- 파일에 대한 정보 = 아이노드
+- offset(독립적으로 저장되어야 할 정보)는 File 디스크립터
+- File system에서는 아이노드를 저장하는 영역과 Data 영역을 지정하는 영역이 따로 존재한다.
+- 아이노드가 부족하다면 트리의 형태로 추가적으로 만들어준다.
+> ![enter image description here](https://mblogthumb-phinf.pstatic.net/20160509_290/eldkrpdla121_14627776275408x5mt_PNG/1.png?type=w2)
+![enter image description here](https://mblogthumb-phinf.pstatic.net/20160509_111/eldkrpdla121_1462777261630clhrU_PNG/4.png?type=w2)
+![enter image description here](https://mblogthumb-phinf.pstatic.net/20160509_135/eldkrpdla121_1462777627926RJdlU_PNG/2.png?type=w2)
+![enter image description here](https://mblogthumb-phinf.pstatic.net/20160509_276/eldkrpdla121_14627780676572FRjh_PNG/1.png?type=w2)
+![enter image description here](https://mblogthumb-phinf.pstatic.net/20160510_177/eldkrpdla121_1462863794705bGYVw_PNG/1.png?type=w2)
+>![enter image description here](https://mblogthumb-phinf.pstatic.net/20160510_103/eldkrpdla121_1462863875312UcmOw_PNG/1.png?type=w2)
+
+### Metadata
+- File의 실제 Data가 저장되어 있는 Index / Owner / Group / 소유자 / 언제 수정 / 언제 접근 등의 파일 속성 데이터가 저장
+- File System에서 Data에 접근 시에는 Metadata의 정보를 Memory에 올린 후에 OS가 읽기 요청을 하게 되면 Memory의 Metadata의 정보를 보고 실제 Data를 찾아들어간다.
+- metadata 정보 ( inode / 해당 파일의 주인, 그룹, permission, 파일 타입, 하드링크 갯수, 파일 사이즈, 수정날짜, 파일의 첫번째 블락 하드디스크 포인터  / 파일 디스크립터)
+> ![enter image description here](https://t1.daumcdn.net/cfile/tistory/25301D4154D85FAE2D)![enter image description here](https://mblogthumb-phinf.pstatic.net/20160509_83/eldkrpdla121_1462777257676cc2Oc_PNG/1.png?type=w2)
+![enter image description here](https://mblogthumb-phinf.pstatic.net/20160509_16/eldkrpdla121_1462777258006IjXXd_PNG/2.png?type=w2)
+![enter image description here](https://mblogthumb-phinf.pstatic.net/20160509_65/eldkrpdla121_1462777261327q49fI_PNG/3.png?type=w2)
+![enter image description here](https://mblogthumb-phinf.pstatic.net/20160509_111/eldkrpdla121_1462777261630clhrU_PNG/4.png?type=w2)
+![enter image description here](https://mblogthumb-phinf.pstatic.net/20160509_135/eldkrpdla121_1462777627926RJdlU_PNG/2.png?type=w2)
+### 클러스터
+> OS가 File system을 생성 하고 저장 장치의 크기를 고려하여 클러스터의 크기 조절![enter image description here](https://mblogthumb-phinf.pstatic.net/20140121_1/bitnang_1390307029668qQYlj_PNG/012114_1223_13.png?type=w2)
+- 만약 10KB 파일을  읽을  경우  
+- 클러스터가 1KB라면 10번 I/O
+- 클러스터  크기가 4KB라면 3번의 I/O
+-  FAT16과  같이  파일시스템  주소  지정  방식에 16Bit
+- 클러스터의  크기가 1KB라면  저장장치의  크기는 65,536(216) X 1,024(1KB) = 64MB
+- 클러스터의  크기가 4KB라면  저장장치의  크기는 65,536(216) X 4,096(4KB) = 256MB
+
+### 디렉토리
+
+- 디렉토리는 해당 inode와 파일명과 맵핑되어 있는 정보를 갖는 파일  
+- 파일들을 계층화 그룹화 => Link로 발전하는 file system도 있다
+- Architecture를 보게 되면 파일과 유사
+
+### Link
+
+- metadata 정보 ( inode / 해당 파일의 주인, 그룹, permission, 파일 타입, 하드링크 갯수, 파일 사이즈, 수정날짜, 파일의 첫번째 블락 하드디스크 포인터  / 파일 디스크립터)
+![enter image description here](https://t1.daumcdn.net/cfile/tistory/25301D4154D85FAE2D)
+1. Hard Link
+- inode를 서로 다른 파일명으로 지칭할 수 있나? -> 가능하다.  
+- 실제 내용을 가지고 있는 영역은 한 개이다.
+- 원파일이 사라지면 하드링크도 사라짐.
+- 하드링크의 단점 : 파티션 경계를 넘어갈 수 없다.
+![enter image description here](https://t1.daumcdn.net/cfile/tistory/246CEE3754D866871A)
+2. Soft Link
+- 타겟 파일 자체에 대한 위치의 포인터 값을 담고 있는 것(해당파일의 물리적 경로)  
+- 파티션 경계를 넘을 수 있다.
+- 원본파일이 없어져도 소프트링크는 인식을 못한다.(리눅스가 인식하여 표시해준다.)  
+
+![enter image description here](https://t1.daumcdn.net/cfile/tistory/23320C3754D877151A)
+![enter image description here](https://t1.daumcdn.net/cfile/tistory/221D294A54D87A4812)
 # 용어 정리
 하나의 File을 5개의 Chunk로 나누었다고 생각하고
 DataNode가 5개 있다 생각하면
@@ -73,3 +134,4 @@ Chunk5 = 3,4,5
 https://www.redhat.com/ko/topics/data-storage/network-attached-storage
 https://www.redhat.com/ko/topics/data-storage/file-block-object-storage
 https://www.kdata.or.kr/info/info_04_view.html?field=&keyword=&type=techreport&page=116&dbnum=146422&mode=detail&type=techreport
+https://kshmc.tistory.com/entry/12-%ED%8C%8C%EC%9D%BC-%EC%8B%9C%EC%8A%A4%ED%85%9C-inode-value-%EB%B0%8F-%ED%95%98%EB%93%9C%EB%A7%81%ED%81%AC
