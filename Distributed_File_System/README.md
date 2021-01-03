@@ -52,15 +52,34 @@
 ### Architecture
 > File System은 파일을 기록하기 위한 것이다.
 > 파일은 속성인 MetaData와 실제 데이터를 기록하는 Data 영역으로 나뉜다.
-> ![enter image description here](https://www.livefirelabs.com/unix_tip_trick_shell_script/unix_operating_system_fundamentals/208_global/images/filesystem1.gif)
-![enter image description here](https://mblogthumb-phinf.pstatic.net/20140121_147/bitnang_1390307029963jlhn2_PNG/012114_1223_14.png?type=w2)
+> Tree 형태의 계층적인 파일구조
+> 
+> <img src="https://i.ibb.co/sQmyynm/image.jpg" alt="image" border="0"></a><br /><a target='_blank' href='https://imgbb.com/'><br />
 
+> ![enter image description here](https://www.livefirelabs.com/unix_tip_trick_shell_script/unix_operating_system_fundamentals/208_global/images/filesystem1.gif)
+
+>![enter image description here](https://mblogthumb-phinf.pstatic.net/20140121_147/bitnang_1390307029963jlhn2_PNG/012114_1223_14.png?type=w2)
+
+### VFS(Virtual File System)
+- File System 관련 인터페이스를 사용자 공간 App에 제공하는 커널 서브 시스템
+- 기존의 File System은 FAT32 / NTFS / EXT4 와 같이 여러 형태로 나뉘기 때문에 이를 하나로 인식하기 위해 파일 시스템 추상화를 한것
+- 사용자는 VFS에 read, write를 함으로써, 여러 파일 시스템 형태에 대해 신경쓰지 않아도 된다.
+>![enter image description here](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https://blog.kakaocdn.net/dn/cQuXqs/btqA3fIYaYl/mFY0Io2NKcEfaucEMJ5KUK/img.png)
+
+>![enter image description here](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https://blog.kakaocdn.net/dn/HGQWl/btqA2NsDHci/VDDzrqi0Bys2hdDg6yRiF0/img.png)
+
+### SuperBlock
+- 각 File System 별로 구현
+-  File System 대한 metadata 
+- File System 유형 / 크기 / 상태 / 다른 metadata( Inode and so on) 
 
 ### Inode
-- 파일에 대한 정보 = 아이노드
+- 파일에 대한 메타데이터 = Inode 유사하다고 봐도 될듯
 - offset(독립적으로 저장되어야 할 정보)는 File 디스크립터
 - File system에서는 아이노드를 저장하는 영역과 Data 영역을 지정하는 영역이 따로 존재한다.
 - 아이노드가 부족하다면 트리의 형태로 추가적으로 만들어준다.
+- VFS에 마운트 되기 위해서는 반드시 메모리 상에 inode를 구축
+>이해한 바로는 VFS의 metadata를 참고하여 해당되는 Inode를 탐색 후 Dentry를 이용하여 해당되는 File이 있는지 여부 확인 후에 해당 File이 존재하면 그 때부터 File 이라는 read / wrtie / seek / open 과 같은 Function을 사용 가능
 > ![enter image description here](https://mblogthumb-phinf.pstatic.net/20160509_290/eldkrpdla121_14627776275408x5mt_PNG/1.png?type=w2)
 ![enter image description here](https://mblogthumb-phinf.pstatic.net/20160509_111/eldkrpdla121_1462777261630clhrU_PNG/4.png?type=w2)
 ![enter image description here](https://mblogthumb-phinf.pstatic.net/20160509_135/eldkrpdla121_1462777627926RJdlU_PNG/2.png?type=w2)
@@ -77,6 +96,17 @@
 ![enter image description here](https://mblogthumb-phinf.pstatic.net/20160509_65/eldkrpdla121_1462777261327q49fI_PNG/3.png?type=w2)
 ![enter image description here](https://mblogthumb-phinf.pstatic.net/20160509_111/eldkrpdla121_1462777261630clhrU_PNG/4.png?type=w2)
 ![enter image description here](https://mblogthumb-phinf.pstatic.net/20160509_135/eldkrpdla121_1462777627926RJdlU_PNG/2.png?type=w2)
+
+### Dentry(Directory Entry)
+- inode number 와 file 이름 관련하여 file과 inode를 연결하여 주는 역할
+- 주로 접근하는 경로는 캐시에 저장
+- Ex) 경로가 /Home/etc/Hello.txt 라면 / , Home , Etc , Hello.txt 라는 object로 변경하여 inode를 찾는다.
+- VFS는 경로명을 사용할 때 마다, Dentry 캐시에서 먼저 찾아보고 없는 경우 직접 탐색
+- 3가지의 상태
+--		사용 : 사용자가 한 명 이상있는 상태, 유효한 아이노드를 가리키는 상태
+-- 	미사용 : 사용자가 없는 상태, 유효한 아이노드를 가리키는 상태
+-- 	부정 : 사용자가 없는 상태, 유효한 아이노드를 가리키지 않는 상태
+
 ### 클러스터
 > OS가 File system을 생성 하고 저장 장치의 크기를 고려하여 클러스터의 크기 조절![enter image description here](https://mblogthumb-phinf.pstatic.net/20140121_1/bitnang_1390307029668qQYlj_PNG/012114_1223_13.png?type=w2)
 - 만약 10KB 파일을  읽을  경우  
@@ -111,14 +141,21 @@
 ![enter image description here](https://t1.daumcdn.net/cfile/tistory/221D294A54D87A4812)
 # 용어 정리
 하나의 File을 5개의 Chunk로 나누었다고 생각하고
+<br/>
 DataNode가 5개 있다 생각하면
+<br/>
 Chunk1 = 1,2,3
+<br/>
 Chunk2 = 1,2,5
+<br/>
 Chunk3 = 2,3,5
+<br/>
 Chunk4 = 1,2,4
+<br/>
 Chunk5 = 3,4,5
 
 이와 같이 'Chunk1 =1,2,3' 을 metadata로 나타낸 뒤 namenode에 기억하구 있어서 
+<br/>
 나중에  namenode에 있는 것을 mapping 하여 해당되는 Data를 꺼내쓴다 라구 생각하면 될듯
 
 
@@ -130,8 +167,11 @@ Chunk5 = 3,4,5
 - 확장성 = 사용자가 늘어나도 무리가 오는지 정도
 - 워크로드 = 주어진 기간 동안 시스템에 의해 실행되어야 할 작업의 할당량
 
-참고  = https://d2.naver.com/helloworld/258077
-https://www.redhat.com/ko/topics/data-storage/network-attached-storage
-https://www.redhat.com/ko/topics/data-storage/file-block-object-storage
-https://www.kdata.or.kr/info/info_04_view.html?field=&keyword=&type=techreport&page=116&dbnum=146422&mode=detail&type=techreport
-https://kshmc.tistory.com/entry/12-%ED%8C%8C%EC%9D%BC-%EC%8B%9C%EC%8A%A4%ED%85%9C-inode-value-%EB%B0%8F-%ED%95%98%EB%93%9C%EB%A7%81%ED%81%AC
+참고
+- https://d2.naver.com/helloworld/258077
+- https://www.redhat.com/ko/topics/data-storage/network-attached-storage
+- https://www.redhat.com/ko/topics/data-storage/file-block-object-storage
+- https://www.kdata.or.kr/info/info_04_view.htmlfield=&keyword=&type=techreport&page=116&dbnum=146422&mode=detail&type=techreport
+- https://kshmc.tistory.com/entry/12-%ED%8C%8C%EC%9D%BC-%EC%8B%9C%EC%8A%A4%ED%85%9C-inode-value-%EB%B0%8F-%ED%95%98%EB%93%9C%EB%A7%81%ED%81%AC
+- https://m.blog.naver.com/eldkrpdla121/220705043180
+- https://m.blog.naver.com/PostView.nhnblogId=eldkrpdla121&logNo=220705036817&proxyReferer=https:%2F%2Fwww.google.com%2F
