@@ -41,10 +41,32 @@
 -여러 Host에서 저장한 정보 공유 가능하다.
 
 ## 5. Ceph
+- Metadata와 data 분리
+- Metadata 작업은 MDS에서만 작용( rename, open , close ) / OSD(read , write)
+- metadata = metadata inode + directory 정보
+- Object의 이름은 metadata inode를 CRUSH function에 넣어 알 수 있다
+- Client들은 동기화 처리(하나의 File에 여러 Client가 동작중인 경우 한명이 Read&Write를 하게 되면 기존의 Client 작업을 중지 시키고 동기화 처리 후 먼저 끝난 애들부터 원래 작업을 하게 되는 비동기 처리 실행)
+- 동기화 작업 시에 OSD Block이 너무 작게 설정되어 있다면 I/O가 빈번히 발생하여 성능이 저하 될 수도 있다.
+- Read&Write를 묶어서 처리 함으로써 일관성을 높인다
+- 
 ### storage cluster
 - Monitor / Manager / OSD(Object storage daemon)
+
 ### metadata server cluster
--
+- metadata 효율성을 높이기 위해 동적 계측 파티션(dynamic subtree partitioning) => 지역성 + I/O 실시간 변경 가능 ( Hashing을 사용하지 않는 이유는 지역성을 훼손되어 data prefetch를 방해) 
+- 기존 File system에서 inode table + file table로 구축 되지만 inode table로만 구성(동기화로 처리할 거라)
+- Client에게 [File 이름의 고유 inode / 소유자 , 모드 ,파일 이름 ....] response 해준다.
+- 동적 분산 메타데이터
+- 저널링 = storage에 data를 저장하기 전에 journal 영역에 data 변경 이력을 저장(metadata)하고 스토리지에 data 변경 내역 저장
+- 쉽게 Flush 되는 대규모 journal을 이용하여 update된 metadata를 효율적이고 분산된 방식으로 Disk에 신속하게 스트리밍이 가능하다.(journal이 쌓이다보면 기존의 jounral은 flushing된다.)
+
+### Client
+- Client -> FOSIX -> VFS -> Ceph File system에 접근하게 된다.
+- metadata server로부터 metadata를 받아 메모리에 올려 마운트가 된 파일 시스템 상호작용
+- 각 Client는 자신의 파일 데이터를 버퍼 캐시(Data Block의 내용을 저장) 와 페이지 캐시(한번 I/O한 내용을 캐시에 저장)에 독립적으로 유지한다.
+- Namespace는 read(readdir , stat) + update(unlink,chmod) MDS에 동기적으로 적용
+- 단순화를 높이기 위해 Client에게 metadata 잠금이나 대여라는 개념을 사용하지 않는다 => callback함수 X
+>![enter image description here](https://allthatlinux.com/dokuwiki/lib/exe/fetch.php/storage:ceph:figure3.gif)
 ### Architecture
 >![enter image description here](https://docs.openstack.org/ocata/config-reference/_images/ceph-architecture.png)
 
@@ -166,6 +188,7 @@ Chunk5 = 3,4,5
 - RAID = Disk에서는 분산 처리 시 Data를 어떻게 저장할 건지를 나타내는 단위인데 (RAID0 은 각각 Disk에 data를 하나씩만 저장하여 복구 불가X)
 - 확장성 = 사용자가 늘어나도 무리가 오는지 정도
 - 워크로드 = 주어진 기간 동안 시스템에 의해 실행되어야 할 작업의 할당량
+- offset = 32bit의 환경의 Linux 라면 2^32 = 4GB가 표현 가능한 최대 offset(inode를 tripple로 하더라도 성능에 따라 좌우된다라는 개념?)
 
 참고
 - https://d2.naver.com/helloworld/258077
