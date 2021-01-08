@@ -59,6 +59,7 @@
 - 동적 분산 메타데이터
 - 저널링 = storage에 data를 저장하기 전에 journal 영역에 data 변경 이력을 저장(metadata)하고 스토리지에 data 변경 내역 저장
 - 쉽게 Flush 되는 대규모 journal을 이용하여 update된 metadata를 효율적이고 분산된 방식으로 Disk에 신속하게 스트리밍이 가능하다.(journal이 쌓이다보면 기존의 jounral은 flushing된다.)
+><img src="https://i.ibb.co/sb2vnNs/MDS.png" alt="MDS" border="0">
 
 ### Client
 - Client -> FOSIX -> VFS -> Ceph File system에 접근하게 된다.
